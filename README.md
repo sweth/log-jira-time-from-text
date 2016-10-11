@@ -12,6 +12,16 @@ You will need node and I recommend [nvm](https://github.com/creationix/nvm).
 3. Configure the script by filling in `config.js`
 4. Run `npm run log`
 
+## Config
+
+The most important config option to note is the base64.
+This script currently uses a base64 encoded `username:password` as
+authentication.
+If this is a major concern, you could swap to an ENV var but that is still
+not great.
+
+PRs welcome :)
+
 ## File format
 
 I've only tested this with a text file in the following format:
