@@ -1,0 +1,16 @@
+{
+  "name": "log-jira-time-from-text",
+  "version": "1.0.0",
+  "description": "log jira time from a text file",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "log": "node index.js"
+  },
+  "author": "jake goldsborough rjgoldsborough@gmail.com",
+  "license": "MIT",
+  "dependencies": {
+    "jira-connector": "^2.3.0",
+    "moment": "^2.15.1",
+  }
+}
