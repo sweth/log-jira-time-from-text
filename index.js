@@ -1,9 +1,19 @@
-'use strict';
-
-const config = require('./config');
+'use strict'; 
 const fs = require('fs');
+var config;
 const jiraClient = require('jira-connector');
 const moment = require('moment');
+
+try {
+  var stat = fs.statSync('./data/config.js');
+  if (stat) {
+    config = require('./data/config');
+  }
+}
+catch(err) {
+  console.log('Err:', err);
+  config = require('./config');
+}
 
 let jira = new jiraClient({
   protocol: config.jira.protocol,
@@ -14,30 +24,26 @@ let jira = new jiraClient({
   }
 });
 
-// Returns an array, each item containing a line in the file
-let input = fs.readFileSync(config.filename).toString().split("\n");
-
-for (let i in input) {
+var lineReader = require('readline').createInterface({
+  input: require('fs').createReadStream(process.argv[2] || config.filename)
+});
+lineReader.on('line', function (line) {
   // Splits at each space and adds it to an array
-  let log = input[i].split(" ");
+  let log = line.split(/\s+/);
 
-  // The last newline in the file was causing an empty array
-  // Adding a check to prevent trying to log empty time
-  if (log[0].length) {
-    jira.issue.addWorkLog({
-      issueKey: log[0],
-      worklog: {
-        // Use moment to format because jira is piiiiiiicky
-        started: moment(new Date).format('YYYY-MM-DDThh:mm:ss.SSSZZ'),
-        timeSpent: log[1]
-      }
-    }, function(err, worklog) {
-      if (err) {
-        console.log(err);
-        new Error(err)
-      } else {
-        console.log(worklog);
-      }
-    });
-  }
-}
+  jira.issue.addWorkLog({
+    issueKey: log[0],
+    worklog: {
+      // Use moment to format because jira is piiiiiiicky
+      started: moment(new Date).format('YYYY-MM-DDThh:mm:ss.SSSZZ'),
+      timeSpent: log[1]
+    }
+  }, function(err, worklog) {
+    if (err) {
+      console.log(log, err);
+      new Error(err)
+    } else {
+      console.log(log, worklog);
+    }
+  });
+});
