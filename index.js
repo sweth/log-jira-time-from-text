@@ -1,8 +1,14 @@
 'use strict'; 
+const _ = require('lodash');
 const fs = require('fs');
 var config;
 const jiraClient = require('jira-connector');
 const moment = require('moment');
+
+if (process.argv.length > 3) {
+  displayUsage();
+  process.exit(99);
+};
 
 try {
   var stat = fs.statSync('./data/config.js');
@@ -28,25 +34,60 @@ var lineReader = require('readline').createInterface({
   input: require('fs').createReadStream(process.argv[2] || config.filename)
 });
 lineReader.on('line', function (line) {
-  // Splits at each space and adds it to an array
-  if (line.match(/^\s*(#.*)?$/)) {
+  var issueKey;
+  var timeSpent;
+  var startDatestamp;
+  var comment;
+  var parts;
+  var worklog;
+  if (line.match(/^\s*((#|\/\/).*)?$/)) {
+    // skip comment lines
     return;
   }
-  let log = line.split(/\s+/);
-
-  jira.issue.addWorkLog({
-    issueKey: log[0],
+  parts = line.split(/\s+/);
+  issueKey = parts.shift();
+  timeSpent = parts.shift();
+  // Use moment to format because jira is piiiiiiicky
+  startDatestamp = moment(new Date).format('YYYY-MM-DDThh:mm:ss.SSSZZ');
+  if (parts) {
+    comment = parts.join(' ');
+    comment = comment.replace(/\s*#\s*/, '');
+  } else {
+    comment = 'Generated via ' + path.basename(process.argv[1]);
+  }
+  worklog = {
+    issueKey: issueKey,
     worklog: {
-      // Use moment to format because jira is piiiiiiicky
-      started: moment(new Date).format('YYYY-MM-DDThh:mm:ss.SSSZZ'),
-      timeSpent: log[1]
+      started: startDatestamp,
+      timeSpent: timeSpent,
+      comment: comment
     }
-  }, function(err, worklog) {
-    if (err) {
-      console.log(log, err);
-      new Error(err)
-    } else {
-      console.log(log, worklog);
-    }
-  });
+  };
+
+  try {
+    jira.issue.addWorkLog(
+      worklog,
+      function(err, response) {
+        if (err) {
+          logMsg(err, line, worklog, response);
+          new Error(err)
+        } else {
+          logMsg([line, response].join(' => '));
+        }
+      }
+    );
+  }
+  catch(err) {
+    logMsg(err, line, worklog);
+  }
 });
+
+function displayUsage() {
+  console.log("Usage: %s [time-file]", path.basename(process.argv[1]));
+};
+
+function logMsg() {
+  _.forEach(arguments, function(value) {
+    console.log(value);
+  });
+};
