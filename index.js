@@ -29,6 +29,9 @@ var lineReader = require('readline').createInterface({
 });
 lineReader.on('line', function (line) {
   // Splits at each space and adds it to an array
+  if (line.match(/^\s*(#.*)?$/)) {
+    return;
+  }
   let log = line.split(/\s+/);
 
   jira.issue.addWorkLog({
